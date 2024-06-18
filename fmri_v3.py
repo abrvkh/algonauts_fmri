@@ -15,8 +15,7 @@ import gc
 from tqdm import tqdm
 from pathlib import Path
 from transformers import Dinov2Config, Dinov2Model, AutoImageProcessor
-import wandb
-PATH = '/home/anastasia/models/'
+PATH = '...'
 
 def cleanup(): 
     try: 
@@ -338,7 +337,6 @@ class fmriMapSimple(torch.nn.Module):
         return out_lh, out_rh
 
 def train(fmri_model, embed_model, queries, masks_lh, masks_rh, loss_fn, device, train_imgs_dataloader, optimizer, epoch, config, max_norm):
-    wandb.init(project="fmri_anastasia", entity="liquid-ai", config=config)
     fmri_model.train()
     for it, (d,y_l,y_r) in tqdm(enumerate(train_imgs_dataloader), total=len(train_imgs_dataloader)):
         d, y_l, y_r = d.to(device), y_l.to(device), y_r.to(device)
@@ -380,7 +378,6 @@ def train(fmri_model, embed_model, queries, masks_lh, masks_rh, loss_fn, device,
                 print('\nCorrelation lh is '+ str(np.nanmean(correlation_lh)))
                 print('\nCorrelation rh is '+ str(np.nanmean(correlation_rh)))
                 # it will be nan if all constants due to stdev
-                wandb.log({"loss": loss.item(), "correlation_lh": np.nanmean(correlation_lh), "correlation_rh": np.nanmean(correlation_rh)})
             
         cleanup()
 
@@ -443,7 +440,7 @@ if __name__=='__main__':
 
     # LOAD DATA 
     # load fmri
-    data_dir = '/home/anastasia/datasets/fmri/subjects/' + subj
+    data_dir = '...' + subj
     fmri_dir = os.path.join(data_dir, 'training_split', 'training_fmri')
     lh_fmri = np.load(os.path.join(fmri_dir, 'lh_training_fmri.npy'))
     rh_fmri = np.load(os.path.join(fmri_dir, 'rh_training_fmri.npy'))
@@ -585,7 +582,7 @@ if __name__=='__main__':
     for epoch in range(0, 10):
         train(fmri_model, embed_model, queries, masks_lh, masks_rh, loss_fn, device, train_imgs_dataloader, optimizer, epoch, config, max_norm)
         torch.save(fmri_model, f"fmri/ckpt/ana_{epoch}.pt")
-        # run pass over validation data (maybe change to also log this in wandb)
+        # run pass over validation data
         fmri_val_pred_lh, fmri_val_pred_rh, correlation_lh, correlation_rh, loss = test(fmri_model, embed_model, queries, rois, masks_lh, masks_rh, loss_fn, device, val_imgs_dataloader)
         # compute mean ignoring nan
         print('LH correlation mean: ' + str(np.nanmean(correlation_lh)))
